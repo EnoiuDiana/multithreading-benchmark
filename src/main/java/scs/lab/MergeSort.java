@@ -7,12 +7,10 @@ import java.util.Random;
 
 class MergeSort{
 
-    // Assuming system has 4 logical processors
     private static int size = 2_000_000_0;
     private static Integer[] list = new Integer[size];
     private static Random randomizer = new Random();
 
-    // Custom Thread class with constructors
     private static class SortThreads extends Thread{
         SortThreads(Integer[] array, int begin, int end){
             super(()->{
@@ -22,61 +20,35 @@ class MergeSort{
         }
     }
 
-    // Perform Threaded merge sort
     public static void threadedSort(int threads_no){
         for ( int i = 0; i < size; i++ ) {
             list[i] = randomizer.nextInt( 100_000_0 );
         }
         final int length = list.length;
-        // Workload per thread (chunk_of_data) = total_elements/core_count
-        // if the no of elements exactly go into no of available threads,
-        // then divide work equally,
-        // else if some remainder is present, then assume we have (actual_threads-1) available workers
-        // and assign the remaining elements to be worked upon by the remaining 1 actual thread.
         boolean exact = length%threads_no == 0;
         int maxlim = exact? length/threads_no: length/(threads_no-1);
-        // if workload is less and no more than 1 thread is required for work, then assign all to 1 thread
         maxlim = Math.max(maxlim, threads_no);
-        // To keep track of threads
         final ArrayList<SortThreads> threads = new ArrayList<>();
-        // Since each thread is independant to work on its assigned chunk,
-        // spawn threads and assign their working index ranges
-        // ex: for 16 element list, t1 = 0-3, t2 = 4-7, t3 = 8-11, t4 = 12-15
+
         for(int i=0; i < length; i+=maxlim){
             int beg = i;
             int remain = (length)-i;
             int end = remain < maxlim? i+(remain-1): i+(maxlim-1);
             final SortThreads t = new SortThreads(list, beg, end);
-            // Add the thread references to join them later
             threads.add(t);
         }
         for(Thread t: threads){
             try{
-                // This implementation of merge requires, all chunks worked by threads to be sorted first.
-                // so we wait until all threads complete
                 t.join();
             } catch(InterruptedException ignored){}
         }
-        // System.out.println("Merging k-parts array, where m number of parts are distinctly sorted by each Threads of available MAX_THREADS="+MAX_THREADS);
-        /*
-          The merge takes 2 parts at a time and merges them into 1,
-          then again merges the resultant into next part and so on...until end
-          For MAXLIMIT = 2 (2 elements per thread where total threads = 4, in a total of 4*2 = 8 elements)
-          list1 = (beg, mid); list2 = (mid+1, end);
-          1st merge = 0,0,1 (beg, mid, end)
-          2nd merge = 0,1,3 (beg, mid, end)
-          3rd merge = 0,3,5 (beg, mid, end)
-          4th merge = 0,5,7 (beg, mid, end)
-        */
+
         for(int i=0; i < length; i+=maxlim){
             int mid = i == 0? 0 : i-1;
             int remain = (length)-i;
             int end = remain < maxlim? i+(remain-1): i+(maxlim-1);
-            // System.out.println("Begin: "+0 + " Mid: "+ mid+ " End: "+ end + " MAXLIM = " + maxlim);
             merge(list, 0, mid, end);
         }
-        //time = System.currentTimeMillis() - time;
-        //System.out.println("Time spent for custom multi-threaded recursive merge_sort(): "+ time+ "ms");
     }
 
     // Typical recursive merge sort
@@ -96,8 +68,6 @@ class MergeSort{
         int i = begin, j = mid+1;
         int k = 0;
 
-        // Add elements from first half or second half based on whichever is lower,
-        // do until one of the list is exhausted and no more direct one-to-one comparison could be made
         while(i<=mid && j<=end){
             if (array[i] <= array[j]){
                 temp[k] = array[i];
@@ -109,13 +79,11 @@ class MergeSort{
             k+=1;
         }
 
-        // Add remaining elements to temp array from first half that are left over
         while(i<=mid){
             temp[k] = array[i];
             i+=1; k+=1;
         }
 
-        // Add remaining elements to temp array from second half that are left over
         while(j<=end){
             temp[k] = array[j];
             j+=1; k+=1;
